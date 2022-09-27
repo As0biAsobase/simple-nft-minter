@@ -21,22 +21,35 @@ def gas_estimate(w3, multiplier):
 def mint(signed_tx):
     try:
         sent_tx = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f"Attempted mint at {datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')}")
     except Exception as e:
         print(e)
 
 def test(contract, key, address):
     print(contract, key, address)
 
+
 def main():
-    contract_address = '0xA870fd655F40583B6c33Ed13363DEffF7958a8D0'
+    contract_address = '0x3DD5e0f0659cA8b52925E504FE9f0250bFe68301'
     print(f'Atemptimg a mint on {contract_address}')
 
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
-    sale_start_time = target_contract.functions.publicSaleStartTime().call()
-    human_time = datetime.utcfromtimestamp(sale_start_time).strftime('%Y-%m-%d %H:%M:%S')
-    print(f'Contract ABI fetched, sale strat time is {sale_start_time} or {human_time} UTC')
+    print(f'Contract ABI fetched, determining the start time...')
+    
+    event_filter = target_contract.events.Initialized.createFilter(fromBlock='latest')
+    start_time = 0
+    while True:
+        for Initialized in event_filter:
+            event_object = Web3.toJSON(Initialized)
+            start_time = event_object["Args"]["allowlistStartTime"]
+        if start_time > 0:
+            human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+            print(f'Initialized() event caught. Sale strat time is {start_time} or {human_time} UTC')  
+            break
+        else: 
+            time.sleep(0.2)
 
-    time_left = time_until(sale_start_time)
+    time_left = time_until(start_time)
     print(f'{time_left} seconds left')
 
     keys_addresses = fetch_addresses()
@@ -47,17 +60,18 @@ def main():
         mint_txn = target_contract.functions.publicSaleMint(
             1
         ).buildTransaction({
-            'gas': 152883,
-            'maxFeePerGas': Web3.toWei('100', 'gwei'),
-            'maxPriorityFeePerGas': Web3.toWei('40', 'gwei'),
+            # 'value' : 2*10**18,
+            'gas': 300000,
+            'maxFeePerGas': Web3.toWei('300', 'gwei'),
+            'maxPriorityFeePerGas': Web3.toWei('50', 'gwei'),
             'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(pair["address"])),
         })
 
         signed_tx = w3.eth.account.sign_transaction(mint_txn, private_key=pair["key"])
         signed_transactions.append(signed_tx)
 
-    while time.time() < sale_start_time:
-        time.sleep(0.05)
+    while time.time() < start_time:
+        time.sleep(0.001)
         
     print('Time is now, attempting mint')
     
@@ -67,10 +81,6 @@ def main():
 
     pool.map(mint, signed_transactions)
     pool.close()
-    # for pair in keys_addresses:
-    #     mint(w3, target_contract, pair['key'], Web3.toChecksumAddress(pair['address']))
-
-
 
 
 if __name__ == "__main__":
