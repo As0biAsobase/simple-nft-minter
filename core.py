@@ -5,45 +5,58 @@ from datetime import datetime
 import time
 import multiprocessing
 
+# Fetching ABI for a specified contract from a Snowtrace API
 def fetch_abi(contract_address):
     url = f"https://api.snowtrace.io/api?module=contract&action=getabi&address={contract_address}"
     return requests.get(url).json()['result']
 
+# Helper function for getting time reamining from time now
 def time_until(ts):
     return ts - int(time.time())
 
+# Addresses in keys are supplied separately in a json file
 def fetch_addresses():
     return json.load(open('keys_adresses.json'))["data"]
 
+# Sending a pre-signed transaction
 def mint(signed_tx):
     try:
         sent_tx = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print(f"Attempted mint at {datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')}")
     except Exception as e:
+        print("Failed misarably, what a disgrace!")
         print(e)
 
-def test(contract, key, address):
-    print(contract, key, address)
-
-def catch_initialization(target_contract):
-    event_filter = target_contract.events.Initialized.createFilter(fromBlock='latest')
-    start_time = 0
-    while True:
-        for Initialized in event_filter:
-            event_object = Web3.toJSON(Initialized)
-            start_time = event_object["Args"]["allowlistStartTime"]
-        if start_time > 0:
-            human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-            print(f'Initialized() event caught. Sale strat time is {start_time} or {human_time} UTC')  
-            break
-        else: 
-            time.sleep(0.2)
+# Get a mint start time from the even json object
+def get_start_time(event_object):
+    start_time = event_object["Args"]["allowlistStartTime"]
+    human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+    print(f' Sale strat time is {start_time} or {human_time} UTC')  
 
     return start_time
 
+def catch_event(filter, target_contract):
+    # Loop continiously until we detect a target event 
+    event_object = 0
+    while True:
+        for event in filter:
+            event_object = Web3.toJSON(event)
+            
+        if event_object != 0:
+            print('Target event detected!')
+            print(event_object)
+            break
+        else: 
+            # Wait 2 seconds (~AVAX blocktime)
+            time.sleep(2)
+
+    return event_object
+
 def sign_transactions(keys_addresses, target_contract):
     signed_transactions = []
+    # Loop through all accounts and generate a mint transaction for each of them
     for pair in keys_addresses:
+        # Build transaction with pre-set parameters
         mint_txn = target_contract.functions.publicSaleMint(
             1
         ).buildTransaction({
@@ -53,6 +66,7 @@ def sign_transactions(keys_addresses, target_contract):
             'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(pair["address"])),
         })
 
+        # Sign each transaction with private key
         signed_tx = w3.eth.account.sign_transaction(mint_txn, private_key=pair["key"])
         signed_transactions.append(signed_tx)
 
@@ -62,24 +76,37 @@ def main():
     contract_address = '0x3DD5e0f0659cA8b52925E504FE9f0250bFe68301'
     print(f'Atemptimg a mint on {contract_address}')
 
+    # We can fetch API from snowtrace API without having to deal with it ourselves
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
     print(f'Contract ABI fetched, determining the start time...')
     
-    start_time = catch_initialization(target_contract)
+    # Create a filter for the Initialized event
+    initialized_event = target_contract.events.Initialized()
+    initialized_filter = initialized_event.createFilter(fromBlock='latest')
 
+    # Waiting and catching the Initialized() even on the target contract to derive the start time
+    event_object = catch_event(initialized_filter, target_contract)
+    start_time = get_start_time(event_object)
+
+    # Calculate time left until the mint
     time_left = time_until(start_time)
     print(f'{time_left} seconds left')
 
+    # Getting the 3 accounts that we'll use for minting
     keys_addresses = fetch_addresses()
     print(f'Got {len(keys_addresses)} wallets, building the transactions array...')
 
+    # We generate and sign all transactions in advance, so the only thing left is to send them
     signed_transactions = sign_transactions(keys_addresses)
 
+    # Simply waiting for the mint to start
     while time.time() < start_time:
         time.sleep(0.001)
         
     print('Time is now, attempting mint')
     
+    # Run minting on multiple accounts in parallel
+    # This part doesn't work on Windows because it uses Spawn instead of Fork
     process_count = multiprocessing.cpu_count()
     print(f"Running minting on {process_count} threads")
     pool = multiprocessing.Pool(processes=process_count)
@@ -90,6 +117,7 @@ def main():
 
 if __name__ == "__main__":
     global w3
+    # Initialize with the default RPC
     w3 = Web3(Web3.HTTPProvider('https://api.avax.network/ext/bc/C/rpc'))
     print(f"Welcome, web3 connection - {w3.isConnected()}")
 
