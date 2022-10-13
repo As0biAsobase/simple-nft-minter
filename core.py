@@ -64,6 +64,7 @@ def sign_transactions(keys_addresses, target_contract):
             'maxFeePerGas': Web3.toWei('300', 'gwei'),
             'maxPriorityFeePerGas': Web3.toWei('50', 'gwei'),
             'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(pair["address"])),
+            'value' : 1
         })
 
         # Sign each transaction with private key
@@ -73,20 +74,27 @@ def sign_transactions(keys_addresses, target_contract):
     return signed_transactions
 
 def main():
-    contract_address = '0x3DD5e0f0659cA8b52925E504FE9f0250bFe68301'
+    contract_address = '0xBC3323468319CF1a2a9CA71A6f4034b7Cb5F8126'
     print(f'Atemptimg a mint on {contract_address}')
 
     # We can fetch API from snowtrace API without having to deal with it ourselves
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
     print(f'Contract ABI fetched, determining the start time...')
     
-    # Create a filter for the Initialized event
-    initialized_event = target_contract.events.Initialized()
-    initialized_filter = initialized_event.createFilter(fromBlock='latest')
 
-    # Waiting and catching the Initialized() even on the target contract to derive the start time
-    event_object = catch_event(initialized_filter, target_contract)
-    start_time = get_start_time(event_object)
+    # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
+    try:
+        start_time = target_contract.functions.publicSaleStartTime().call()
+    except:
+        print("Failed to get start time, atempting to listen for Initialization event")
+        
+        # Create a filter for the Initialized event
+        initialized_event = target_contract.events.Initialized()
+        initialized_filter = initialized_event.createFilter(fromBlock='latest')
+
+        # Waiting and catching the Initialized() even on the target contract to derive the start time
+        event_object = catch_event(initialized_filter, target_contract)
+        start_time = get_start_time(event_object)
 
     # Calculate time left until the mint
     time_left = time_until(start_time)
@@ -97,7 +105,8 @@ def main():
     print(f'Got {len(keys_addresses)} wallets, building the transactions array...')
 
     # We generate and sign all transactions in advance, so the only thing left is to send them
-    signed_transactions = sign_transactions(keys_addresses)
+    signed_transactions = sign_transactions(keys_addresses, target_contract)
+    print("Transactions prepered, starting the wait...")
 
     # Simply waiting for the mint to start
     while time.time() < start_time:
