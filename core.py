@@ -57,7 +57,7 @@ def sign_transactions(keys_addresses, target_contract):
     # Loop through all accounts and generate a mint transaction for each of them
     for pair in keys_addresses:
         # Build transaction with pre-set parameters
-        mint_txn = target_contract.functions.publicSaleMint(
+        mint_txn = target_contract.functions.allowlistMint( #publicSaleMint allowlistMint
             1
         ).buildTransaction({
             'gas': 300000,
@@ -84,7 +84,7 @@ def main():
 
     # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
     try:
-        start_time = target_contract.functions.publicSaleStartTime().call()
+        start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
     except:
         print("Failed to get start time, atempting to listen for Initialization event")
         
