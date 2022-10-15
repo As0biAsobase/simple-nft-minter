@@ -29,7 +29,7 @@ def mint(signed_tx):
 
 # Get a mint start time from the even json object
 def get_start_time(event_object):
-    start_time = event_object["Args"]["allowlistStartTime"]
+    start_time = event_object["args"]["allowlistStartTime"]
     human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
     print(f' Sale strat time is {start_time} or {human_time} UTC')  
 
@@ -39,7 +39,7 @@ def catch_event(filter, target_contract):
     # Loop continiously until we detect a target event 
     event_object = 0
     while True:
-        for event in filter:
+        for event in filter.get_all_entries():
             event_object = Web3.toJSON(event)
             
         if event_object != 0:
@@ -50,7 +50,7 @@ def catch_event(filter, target_contract):
             # Wait 2 seconds (~AVAX blocktime)
             time.sleep(2)
 
-    return event_object
+    return json.loads(event_object)
 
 def sign_transactions(keys_addresses, target_contract):
     signed_transactions = []
@@ -58,13 +58,13 @@ def sign_transactions(keys_addresses, target_contract):
     for pair in keys_addresses:
         # Build transaction with pre-set parameters
         mint_txn = target_contract.functions.allowlistMint( #publicSaleMint allowlistMint
-            1
+            3
         ).buildTransaction({
             'gas': 300000,
             'maxFeePerGas': Web3.toWei('300', 'gwei'),
             'maxPriorityFeePerGas': Web3.toWei('50', 'gwei'),
             'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(pair["address"])),
-            'value' : 1
+            'value' : 3750000000000000000
         })
 
         # Sign each transaction with private key
