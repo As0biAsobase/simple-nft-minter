@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import time
 import multiprocessing
+import yaml
 
 # Fetching ABI for a specified contract from a Snowtrace API
 def fetch_abi(contract_address):
@@ -57,14 +58,22 @@ def sign_transactions(keys_addresses, target_contract):
     # Loop through all accounts and generate a mint transaction for each of them
     for pair in keys_addresses:
         # Build transaction with pre-set parameters
-        mint_txn = target_contract.functions.allowlistMint( #publicSaleMint allowlistMint
-            3
-        ).buildTransaction({
-            'gas': 300000,
-            'maxFeePerGas': Web3.toWei('300', 'gwei'),
-            'maxPriorityFeePerGas': Web3.toWei('50', 'gwei'),
+        if config["transaction_settings"]["is_wl"]: 
+            mint_txn = target_contract.functions.allowlistMint(
+                config["transaction_settings"]["count"]
+            )
+        else: 
+            mint_txn = target_contract.functions.publicSaleMint(
+                config["transaction_settings"]["count"]
+            ) 
+            
+        
+        mint_txn = mint_txn.buildTransaction({
+            'gas': config["transaction_settings"]["gas"],
+            'maxFeePerGas': Web3.toWei(config["transaction_settings"]["max_fee"], 'gwei'),
+            'maxPriorityFeePerGas': Web3.toWei(config["transaction_settings"]["max_priority_fee"], 'gwei'),
             'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(pair["address"])),
-            'value' : 3750000000000000000
+            'value' : config["transaction_settings"]["value"]
         })
 
         # Sign each transaction with private key
@@ -74,7 +83,7 @@ def sign_transactions(keys_addresses, target_contract):
     return signed_transactions
 
 def main():
-    contract_address = '0xBC3323468319CF1a2a9CA71A6f4034b7Cb5F8126'
+    contract_address = config['address']
     print(f'Atemptimg a mint on {contract_address}')
 
     # We can fetch API from snowtrace API without having to deal with it ourselves
@@ -125,9 +134,13 @@ def main():
 
 
 if __name__ == "__main__":
-    global w3
-    # Initialize with the default RPC
-    w3 = Web3(Web3.HTTPProvider('https://api.avax.network/ext/bc/C/rpc'))
+    global w3, config
+
+    # Load up config
+    config = yaml.safe_load(open("config.yml"))
+
+    # Initialize RPC endpoint
+    w3 = Web3(Web3.HTTPProvider(config['rpc']))
     print(f"Welcome, web3 connection - {w3.isConnected()}")
 
     main()
