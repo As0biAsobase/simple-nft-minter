@@ -1,9 +1,10 @@
-rpc: https://api.avax.network/ext/bc/C/rpc
-address: 0xF3b5903c277eF3d0c9679Bae3A2bf05D2CbA3441
+rpc: "https://api.avax.network/ext/bc/C/rpc"
+address: "0xF3b5903c277eF3d0c9679Bae3A2bf05D2CbA3441"
+production_adresses: "keys_adresses.json"
 transaction_settings: 
   is_wl: False
   count: 1
   gas: 300000
-  max_fee: 300
-  max_priority_fee: 50
-  value: 2000000000000000000
+  max_fee: 30
+  max_priority_fee: 1
+  value: 0 #2000000000000000000

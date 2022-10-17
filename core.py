@@ -17,13 +17,14 @@ def time_until(ts):
 
 # Addresses in keys are supplied separately in a json file
 def fetch_addresses():
-    return json.load(open('keys_adresses.json'))["data"]
+    return json.load(open(config['production_adresses']))["data"]
 
 # Sending a pre-signed transaction
 def mint(signed_tx):
     try:
-        sent_tx = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print(f"Attempted mint at {datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')}")
+        sent_tx = w3.eth.send_raw_transaction(signed_tx)
+        print(f"Attempted mint at {datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')} ")
+        print(f"Transaction hex: {sent_tx}")
     except Exception as e:
         print("Failed misarably, what a disgrace!")
         print(e)
@@ -78,7 +79,7 @@ def sign_transactions(keys_addresses, target_contract):
 
         # Sign each transaction with private key
         signed_tx = w3.eth.account.sign_transaction(mint_txn, private_key=pair["key"])
-        signed_transactions.append(signed_tx)
+        signed_transactions.append(signed_tx.rawTransaction)
 
     return signed_transactions
 
