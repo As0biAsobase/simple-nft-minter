@@ -15,6 +15,11 @@ def fetch_abi(contract_address):
 def time_until(ts):
     return ts - int(time.time())
 
+# Print time of a mint in a human readable format
+def time_printer(start_time):
+    human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+    print(f' Sale strat time is {start_time} or {human_time} UTC')
+
 # Addresses in keys are supplied separately in a json file
 def fetch_addresses():
     return json.load(open(config['production_adresses']))["data"]
@@ -32,8 +37,7 @@ def mint(signed_tx):
 # Get a mint start time from the even json object
 def get_start_time(event_object, start_time):
     start_time = event_object["args"][start_time]
-    human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-    print(f' Sale strat time is {start_time} or {human_time} UTC')  
+    time_printer(start_time)
 
     return start_time
 
@@ -94,7 +98,11 @@ def main():
 
     # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
     try:
-        start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
+        if config["transaction_settings"]["is_wl"]:
+            start_time = target_contract.functions.allowlistStartTime().call()
+        else: 
+            start_time = target_contract.functions.publicSaleStartTime().call()
+        time_printer(start_time)
     except:
         print("Failed to get start time, atempting to listen for Initialization event")
         
