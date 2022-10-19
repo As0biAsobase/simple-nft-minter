@@ -30,8 +30,8 @@ def mint(signed_tx):
         print(e)
 
 # Get a mint start time from the even json object
-def get_start_time(event_object):
-    start_time = event_object["args"]["allowlistStartTime"]
+def get_start_time(event_object, start_time):
+    start_time = event_object["args"][start_time]
     human_time = datetime.utcfromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
     print(f' Sale strat time is {start_time} or {human_time} UTC')  
 
@@ -84,27 +84,27 @@ def sign_transactions(keys_addresses, target_contract):
     return signed_transactions
 
 def main():
-    contract_address = config['address']
+    # Load up the adrdress and checksum it in case it wasn't submited properly
+    contract_address = Web3.toChecksumAddress(config['address'])
     print(f'Atemptimg a mint on {contract_address}')
 
     # We can fetch API from snowtrace API without having to deal with it ourselves
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
     print(f'Contract ABI fetched, determining the start time...')
-    
 
-    # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
-    try:
-        start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
-    except:
-        print("Failed to get start time, atempting to listen for Initialization event")
+    # # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
+    # try:
+    #     start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
+    # except:
+    #     print("Failed to get start time, atempting to listen for Initialization event")
         
-        # Create a filter for the Initialized event
-        initialized_event = target_contract.events.Initialized()
-        initialized_filter = initialized_event.createFilter(fromBlock='latest')
+    # Create a filter for the Initialized event
+    initialized_event = target_contract.events.Initialized()
+    initialized_filter = initialized_event.createFilter(fromBlock='latest')
 
-        # Waiting and catching the Initialized() even on the target contract to derive the start time
-        event_object = catch_event(initialized_filter, target_contract)
-        start_time = get_start_time(event_object)
+    # Waiting and catching the Initialized() even on the target contract to derive the start time
+    event_object = catch_event(initialized_filter, target_contract)
+    start_time = get_start_time(event_object, config['start_time'])
 
     # Calculate time left until the mint
     time_left = time_until(start_time)
@@ -118,8 +118,8 @@ def main():
     signed_transactions = sign_transactions(keys_addresses, target_contract)
     print("Transactions prepered, starting the wait...")
 
-    # Simply waiting for the mint to start
-    while time.time() < start_time:
+    # Simply waiting for the mint to start, we attempt to send transaction a bit in advance, because reasons
+    while time.time() < start_time - config['mint_haste']:
         time.sleep(0.001)
         
     print('Time is now, attempting mint')

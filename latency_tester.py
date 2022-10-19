@@ -9,7 +9,7 @@ from web3 import Web3, EthereumTesterProvider
 from web3.middleware import geth_poa_middleware
 
 # This test doesn't relate to actual code but helps us a get an estimate
-#  of how much time passes between sending transaction and it getting confirmed
+# of how much time passes between sending transaction and it getting confirmed 
 def latency_experiment():
     # Load up config
     config = yaml.safe_load(open("config.yml"))
@@ -21,7 +21,8 @@ def latency_experiment():
     # We need to do this, even though Avalanche is not POA
     w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    contract_address = config['address']
+    # Load up the adrdress and checksum it in case it wasn't submited properly
+    contract_address = Web3.toChecksumAddress(config['address'])
     print(f'Atemptimg a mint on {contract_address}')
 
     # We can fetch API from snowtrace API without having to deal with it ourselves
@@ -34,7 +35,7 @@ def latency_experiment():
             'gas': config["transaction_settings"]["gas"],
             'maxFeePerGas': Web3.toWei(config["transaction_settings"]["max_fee"], 'gwei'),
             'maxPriorityFeePerGas': Web3.toWei(config["transaction_settings"]["max_priority_fee"], 'gwei'),
-            'nonce': w3.eth.get_transaction_count( Web3.toChecksumAddress(key_address["address"])),
+            'nonce': w3.eth.get_transaction_count(Web3.toChecksumAddress(key_address["address"])),
             'value' : config["transaction_settings"]["value"]
         })
 

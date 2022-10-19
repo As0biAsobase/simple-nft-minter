@@ -42,7 +42,7 @@ def test_start_time_getter():
             "event": "Initialized"
     }
 
-    start_time = core.get_start_time(event_object)
+    start_time = core.get_start_time(event_object, 'allowlistStartTime')
     assert start_time == 1665680400
 
 
@@ -53,6 +53,6 @@ def test_start_time_chained():
     initialized_filter = initialized_event.createFilter(fromBlock=20968390, toBlock=20970438)
     
     event_object = core.catch_event(initialized_filter, target_contract)
-    start_time = core.get_start_time(event_object)
+    start_time = core.get_start_time(event_object, 'allowlistStartTime')
 
     assert start_time == 1665680400
