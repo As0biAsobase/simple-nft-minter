@@ -92,19 +92,19 @@ def main():
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
     print(f'Contract ABI fetched, determining the start time...')
 
-    # # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
-    # try:
-    #     start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
-    # except:
-    #     print("Failed to get start time, atempting to listen for Initialization event")
+    # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
+    try:
+        start_time = target_contract.functions.allowlistStartTime().call() #publicSaleStartTime allowlistStartTime
+    except:
+        print("Failed to get start time, atempting to listen for Initialization event")
         
-    # Create a filter for the Initialized event
-    initialized_event = target_contract.events.Initialized()
-    initialized_filter = initialized_event.createFilter(fromBlock='latest')
+        # Create a filter for the Initialized event
+        initialized_event = target_contract.events.Initialized()
+        initialized_filter = initialized_event.createFilter(fromBlock='latest')
 
-    # Waiting and catching the Initialized() even on the target contract to derive the start time
-    event_object = catch_event(initialized_filter, target_contract)
-    start_time = get_start_time(event_object, config['start_time'])
+        # Waiting and catching the Initialized() even on the target contract to derive the start time
+        event_object = catch_event(initialized_filter, target_contract)
+        start_time = get_start_time(event_object, config['start_time'])
 
     # Calculate time left until the mint
     time_left = time_until(start_time)
