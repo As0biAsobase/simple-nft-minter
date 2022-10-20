@@ -65,7 +65,7 @@ def catch_event(event, filter, target_contract):
             print(f'Done {i} iterations, still no event', end='\r')
 
             # The filter only works for last N blocks, we need to redefine it once we approach 128
-            if i == 120:
+            if i % 120 == 0:
                 filter = redefine_filter(event)
 
             time.sleep(2)
