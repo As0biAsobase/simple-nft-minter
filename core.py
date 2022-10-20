@@ -41,7 +41,13 @@ def get_start_time(event_object, start_time):
 
     return start_time
 
-def catch_event(filter, target_contract):
+# Simply update filter with the latest block
+def redefine_filter(event):
+    print(f'Now looking for events since - {w3.eth.block_number}')
+    return event.createFilter(fromBlock=w3.eth.block_number)
+
+# Catching an event specified in filter
+def catch_event(event, filter, target_contract):
     # Loop continiously until we detect a target event 
     event_object = 0
     i = 0
@@ -57,6 +63,11 @@ def catch_event(filter, target_contract):
             # Wait 2 seconds (~AVAX blocktime)
             i += 1
             print(f'Done {i} iterations, still no event', end='\r')
+
+            # The filter only works for last N blocks, we need to redefine it once we approach 128
+            if i == 120:
+                filter = redefine_filter(event)
+
             time.sleep(2)
 
 
@@ -100,8 +111,7 @@ def main():
     target_contract = w3.eth.contract(address=contract_address, abi=fetch_abi(contract_address))
     print(f'Contract ABI fetched, determining the start time...')
 
-    # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
-    
+    # Attempt to collect start time if initialized and fall back to waiting to initialization event if got 0
     if config["transaction_settings"]["is_wl"]:
         start_time = target_contract.functions.allowlistStartTime().call()
     else: 
@@ -111,13 +121,13 @@ def main():
     if start_time == 0:
         print("Failed to get start time, atempting to listen for Initialization event")
         
-        # Create a filter for the Initialized event
+        # Define the initialized event
         initialized_event = target_contract.events.Initialized()
         initialized_filter = initialized_event.createFilter(fromBlock=w3.eth.block_number)
         print(f'Looking for events since - {w3.eth.block_number}')
 
         # Waiting and catching the Initialized() even on the target contract to derive the start time
-        event_object = catch_event(initialized_filter, target_contract)
+        event_object = catch_event(initialized_event, initialized_filter, target_contract)
         start_time = get_start_time(event_object, config['start_time'])
 
     # Calculate time left until the mint
