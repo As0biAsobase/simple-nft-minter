@@ -4,7 +4,7 @@ production_adresses: "keys_adresses.json"
 start_time: "allowlistStartTime" #'publicSaleStartTime' #"allowlistStartTime"
 mint_haste: 1
 transaction_settings: 
-  is_wl: False
+  is_wl: True
   count: 1
   gas: 300000
   max_fee: 300 #2000
