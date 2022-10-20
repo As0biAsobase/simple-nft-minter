@@ -44,6 +44,7 @@ def get_start_time(event_object, start_time):
 def catch_event(filter, target_contract):
     # Loop continiously until we detect a target event 
     event_object = 0
+    i = 0
     while True:
         for event in filter.get_all_entries():
             event_object = Web3.toJSON(event)
@@ -54,7 +55,10 @@ def catch_event(filter, target_contract):
             break
         else: 
             # Wait 2 seconds (~AVAX blocktime)
+            i += 1
+            print(f'Done {i} iterations, still no event', end='\r')
             time.sleep(2)
+
 
     return json.loads(event_object)
 
@@ -109,7 +113,8 @@ def main():
         
         # Create a filter for the Initialized event
         initialized_event = target_contract.events.Initialized()
-        initialized_filter = initialized_event.createFilter(fromBlock='latest')
+        initialized_filter = initialized_event.createFilter(fromBlock=w3.eth.block_number)
+        print(f'Looking for events since - {w3.eth.block_number}')
 
         # Waiting and catching the Initialized() even on the target contract to derive the start time
         event_object = catch_event(initialized_filter, target_contract)
