@@ -97,13 +97,14 @@ def main():
     print(f'Contract ABI fetched, determining the start time...')
 
     # Attempt to collect start time if initialized and fall back to waiting to initialization event if failed
-    try:
-        if config["transaction_settings"]["is_wl"]:
-            start_time = target_contract.functions.allowlistStartTime().call()
-        else: 
-            start_time = target_contract.functions.publicSaleStartTime().call()
-        time_printer(start_time)
-    except:
+    
+    if config["transaction_settings"]["is_wl"]:
+        start_time = target_contract.functions.allowlistStartTime().call()
+    else: 
+        start_time = target_contract.functions.publicSaleStartTime().call()
+    time_printer(start_time)
+    
+    if start_time == 0:
         print("Failed to get start time, atempting to listen for Initialization event")
         
         # Create a filter for the Initialized event
