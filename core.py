@@ -29,7 +29,7 @@ def mint(signed_tx):
     try:
         sent_tx = w3.eth.send_raw_transaction(signed_tx)
         print(f"Attempted mint at {datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')} ")
-        print(f"Transaction hex: {sent_tx}")
+        print(f"Transaction hex: {sent_tx.hex()}")
     except Exception as e:
         print("Failed misarably, what a disgrace!")
         print(e)
@@ -103,7 +103,7 @@ def main():
     else: 
         start_time = target_contract.functions.publicSaleStartTime().call()
     time_printer(start_time)
-    
+
     if start_time == 0:
         print("Failed to get start time, atempting to listen for Initialization event")
         
