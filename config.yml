@@ -1,7 +1,7 @@
 rpc: "https://api.avax.network/ext/bc/C/rpc"
 address: "0x13f242cD2Bc1D825C76D0BFe7cc4a01f4DBc5Bea"
 production_adresses: "keys_adresses.json"
-start_time: ""allowlistStartTime" #'publicSaleStartTime' #"allowlistStartTime"
+start_time: "allowlistStartTime" #'publicSaleStartTime' #"allowlistStartTime"
 mint_haste: 1
 transaction_settings: 
   is_wl: True
