@@ -1,12 +1,12 @@
 rpc: "https://api.avax.network/ext/bc/C/rpc"
-address: "0x1a25f726720aa11bdcbDb21b9bD9C9a17C027829"
+address: ""
 production_adresses: "keys_adresses.json"
-start_time: "allowlistStartTime" #'publicSaleStartTime' #"allowlistStartTime"
+start_time: "allowlistStartTime"
 mint_haste: 1
 transaction_settings: 
   is_wl: True
   count: 5
   gas: 300000
-  max_fee: 4000 #2000
-  max_priority_fee: 4000 #2000
+  max_fee: 4000
+  max_priority_fee: 4000 
   value: 4500000000000000000
